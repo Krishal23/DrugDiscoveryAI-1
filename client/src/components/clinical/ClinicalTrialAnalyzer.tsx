@@ -221,7 +221,9 @@ const ClinicalTrialAnalyzer = () => {
                             <div className="flex justify-between text-sm">
                               <span className="text-gray-600">p-Value:</span>
                               <span className={`font-ibm font-medium ${
-                                analyzeTrialMutation.data?.pValue && parseFloat(analyzeTrialMutation.data.pValue) < 0.05 ? "text-success" : "text-warning"
+                                analyzeTrialMutation.data?.pValue && typeof analyzeTrialMutation.data.pValue === 'string' && parseFloat(analyzeTrialMutation.data.pValue) < 0.05 
+                                  ? "text-success" 
+                                  : "text-warning"
                               }`}>
                                 {analyzeTrialMutation.data?.pValue || 'N/A'}
                               </span>
