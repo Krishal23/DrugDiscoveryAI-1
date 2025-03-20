@@ -68,11 +68,11 @@ const InteractionPredictor = () => {
                   <SelectValue placeholder="Choose a drug compound" />
                 </SelectTrigger>
                 <SelectContent>
-                  {drugs?.map((drug: Drug) => (
+                  {drugs && drugs.length > 0 ? drugs.map((drug: Drug) => (
                     <SelectItem key={drug.id} value={drug.id.toString()}>
                       {drug.name}
                     </SelectItem>
-                  ))}
+                  )) : <SelectItem value="none" disabled>No drugs available</SelectItem>}
                 </SelectContent>
               </Select>
             </div>
@@ -87,11 +87,11 @@ const InteractionPredictor = () => {
                   <SelectValue placeholder="Choose a target protein" />
                 </SelectTrigger>
                 <SelectContent>
-                  {targets?.map((target: Target) => (
+                  {targets && targets.length > 0 ? targets.map((target: Target) => (
                     <SelectItem key={target.id} value={target.id.toString()}>
                       {target.name}
                     </SelectItem>
-                  ))}
+                  )) : <SelectItem value="none" disabled>No targets available</SelectItem>}
                 </SelectContent>
               </Select>
             </div>
@@ -140,13 +140,13 @@ const InteractionPredictor = () => {
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                   <div className="bg-gray-50 p-3 rounded-md">
-                    <h4 className="text-sm font-medium mb-2">Drug: {drugs?.find((d: Drug) => d.id.toString() === selectedDrugId)?.name}</h4>
+                    <h4 className="text-sm font-medium mb-2">Drug: {drugs && drugs.length > 0 ? drugs.find((d: Drug) => d.id.toString() === selectedDrugId)?.name : 'N/A'}</h4>
                     <div className="h-24 bg-gray-100 rounded-md overflow-hidden">
-                      <MoleculeViewer smilesString={drugs?.find((d: Drug) => d.id.toString() === selectedDrugId)?.smiles} />
+                      <MoleculeViewer smilesString={drugs && drugs.length > 0 ? drugs.find((d: Drug) => d.id.toString() === selectedDrugId)?.smiles : ''} />
                     </div>
                   </div>
                   <div className="bg-gray-50 p-3 rounded-md">
-                    <h4 className="text-sm font-medium mb-2">Target: {targets?.find((t: Target) => t.id.toString() === selectedTargetId)?.name}</h4>
+                    <h4 className="text-sm font-medium mb-2">Target: {targets && targets.length > 0 ? targets.find((t: Target) => t.id.toString() === selectedTargetId)?.name : 'N/A'}</h4>
                     <div className="h-24 bg-gray-100 rounded-md overflow-hidden">
                       <MoleculeViewer pdbId="1TNF" />
                     </div>
@@ -160,11 +160,11 @@ const InteractionPredictor = () => {
                     <div className="mb-6">
                       <div className="flex justify-between mb-2">
                         <h4 className="text-sm font-medium">Interaction Score</h4>
-                        <span className={`text-lg font-semibold ${getScoreColor(predictInteractionMutation.data.score)}`}>
-                          {predictInteractionMutation.data.score}%
+                        <span className={`text-lg font-semibold ${getScoreColor(predictInteractionMutation.data?.score || 0)}`}>
+                          {predictInteractionMutation.data?.score || 0}%
                         </span>
                       </div>
-                      <Progress value={predictInteractionMutation.data.score} className="h-2" />
+                      <Progress value={predictInteractionMutation.data?.score || 0} className="h-2" />
                       <p className="text-xs text-gray-500 mt-1">
                         Score indicates the predicted binding affinity
                       </p>

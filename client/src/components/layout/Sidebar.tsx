@@ -37,10 +37,10 @@ const Sidebar = () => {
           {navItems.map((item) => (
             <li key={item.path}>
               <Link href={item.path}>
-                <a className={`flex items-center px-4 py-3 hover:bg-primary-700 ${location === item.path ? 'bg-primary-800' : ''} text-white`}>
+                <div className={`flex items-center px-4 py-3 hover:bg-primary-700 ${location === item.path ? 'bg-primary-800' : ''} text-white cursor-pointer`}>
                   <i className={`${item.icon} mr-3`}></i>
                   <span>{item.name}</span>
-                </a>
+                </div>
               </Link>
             </li>
           ))}

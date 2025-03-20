@@ -240,7 +240,7 @@ const ClinicalTrialAnalyzer = () => {
                         <CardContent className="p-4">
                           <h4 className="text-sm font-medium mb-3">Trial Recommendation</h4>
                           <div className="bg-accent bg-opacity-10 p-3 rounded-md">
-                            <p className="text-sm">{analyzeTrialMutation.data.recommendation}</p>
+                            <p className="text-sm">{analyzeTrialMutation.data?.recommendation || 'No recommendation available.'}</p>
                           </div>
                           <div className="mt-3 flex items-center">
                             <Badge className="bg-success">Recommended</Badge>
