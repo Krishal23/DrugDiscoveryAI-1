@@ -43,10 +43,10 @@ const MoleculeViewer = ({ pdbId, smilesString }: MoleculeViewerProps) => {
         viewer.render();
       });
     } else if (smilesString) {
-      // Load from SMILES
-      const m = viewer.addModel();
-      window.$3Dmol.parseSMILES(smilesString, m);
-      m.setStyle({}, { stick: {} });
+      // Load from SMILES using SDF format
+      const source = `data:chemical/smiles,${encodeURIComponent(smilesString)}`;
+      viewer.addModel(smilesString, "smi");
+      viewer.setStyle({}, { stick: {} });
       viewer.zoomTo();
       viewer.render();
     } else {
