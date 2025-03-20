@@ -1,4 +1,4 @@
-import type { Express, Request, Response } from "express";
+import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { 
@@ -10,6 +10,14 @@ import {
   insertActivitySchema 
 } from "@shared/schema";
 import { z } from "zod";
+
+// Import ML models
+import { getTargetValidationNLP } from "./ml/nlpTargetValidation";
+import { getInteractionPredictor } from "./ml/interactionPredictor";
+import { getAdmetPredictor } from "./ml/admetPredictor";
+import { getVirtualScreening } from "./ml/virtualScreening";
+import { getClinicalTrialAnalyzer } from "./ml/clinicalTrialAnalyzer";
+import { getDrugGenerator } from "./ml/drugGenerator";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // API routes
@@ -308,54 +316,58 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // ML endpoints for drug discovery operations
   
   // Target validation with NLP
-  app.post("/api/nlp/validate-target", (req: Request, res: Response) => {
+  app.post("/api/nlp/validate-target", async (req: Request, res: Response) => {
     try {
-      const { query } = req.body;
+      const { targetDescription, geneName, disease } = req.body;
       
-      if (!query) {
-        return res.status(400).json({ message: "Query is required" });
+      if (!targetDescription || !geneName || !disease) {
+        return res.status(400).json({ 
+          message: "Target description, gene name, and disease are required" 
+        });
       }
       
-      // In a real app, this would call a NLP service
-      // For now, return a mock response
-      res.json({
-        confidence: Math.floor(Math.random() * 30) + 70, // 70-99% confidence
-        relevantPublications: Math.floor(Math.random() * 200) + 50,
-        suggestedTargets: [
-          { name: "TNF-α Receptor", score: 0.94 },
-          { name: "IL-6 Receptor", score: 0.89 },
-          { name: "JAK2 Kinase", score: 0.76 },
-        ]
-      });
+      // Get instance of NLP model
+      const nlpModel = await getTargetValidationNLP();
+      
+      // Run validation using ML model
+      const result = await nlpModel.validateTarget(targetDescription, geneName, disease);
+      
+      res.json(result);
     } catch (error) {
+      console.error('Error in target validation:', error);
       res.status(500).json({ message: "Failed to validate target" });
     }
   });
 
-  // Drug generation with RL
-  app.post("/api/generate/drug", (req: Request, res: Response) => {
+  // Drug generation with RL/ML
+  app.post("/api/generate/drug", async (req: Request, res: Response) => {
     try {
-      const { targetId, parameters } = req.body;
+      const { targetId, similarTo, constraints, count } = req.body;
       
       if (!targetId) {
         return res.status(400).json({ message: "Target ID is required" });
       }
       
-      // In a real app, this would call a drug generation service
-      res.json({
-        generatedDrugs: [
-          { name: "Compound A", smiles: "CCC1=CC=C(C=C1)NC(=O)NC2=CC=CC=C2F", score: 0.92 },
-          { name: "Compound B", smiles: "CC1=CC=C(C=C1)COC(=O)N2CCCCC2", score: 0.88 },
-          { name: "Compound C", smiles: "CC1=CC=CC=C1NC(=O)C2=CC=C(C=C2)Cl", score: 0.76 }
-        ]
-      });
+      // Get instance of drug generator model
+      const generator = await getDrugGenerator();
+      
+      // Generate drug candidates using ML model
+      const result = await generator.generateDrugCandidates(
+        targetId, 
+        similarTo, 
+        constraints, 
+        count || 5
+      );
+      
+      res.json(result);
     } catch (error) {
+      console.error('Error in drug generation:', error);
       res.status(500).json({ message: "Failed to generate drugs" });
     }
   });
 
   // Drug-target interaction prediction
-  app.post("/api/predict/interaction", (req: Request, res: Response) => {
+  app.post("/api/predict/interaction", async (req: Request, res: Response) => {
     try {
       const { drugId, targetId } = req.body;
       
@@ -363,88 +375,124 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Drug ID and Target ID are required" });
       }
       
-      // In a real app, this would use ML models
-      res.json({
-        score: Math.floor(Math.random() * 30) + 70,
-        confidence: Math.floor(Math.random() * 20) + 80,
-        bindingSites: [
-          { position: "S1", affinity: "High" },
-          { position: "S2", affinity: "Medium" }
-        ]
-      });
+      // Get the drug and target data from storage
+      const drug = await storage.getDrug(Number(drugId));
+      const target = await storage.getTarget(Number(targetId));
+      
+      if (!drug || !target) {
+        return res.status(404).json({ 
+          message: drug ? "Target not found" : "Drug not found" 
+        });
+      }
+      
+      // Get instance of interaction predictor model
+      const predictor = await getInteractionPredictor();
+      
+      // Use a default protein sequence if not available
+      const targetSequence = target.geneName || target.name;
+      
+      // Run interaction prediction using ML model
+      const result = await predictor.predictInteraction(drug.smiles, targetSequence);
+      
+      res.json(result);
     } catch (error) {
+      console.error('Error in interaction prediction:', error);
       res.status(500).json({ message: "Failed to predict interaction" });
     }
   });
 
   // ADMET properties prediction
-  app.post("/api/predict/admet", (req: Request, res: Response) => {
+  app.post("/api/predict/admet", async (req: Request, res: Response) => {
     try {
-      const { smiles } = req.body;
+      const { smiles, drugId } = req.body;
+      let smilesString = smiles;
       
-      if (!smiles) {
+      // If drugId is provided, get the SMILES from the database
+      if (drugId && !smiles) {
+        const drug = await storage.getDrug(Number(drugId));
+        if (!drug) {
+          return res.status(404).json({ message: "Drug not found" });
+        }
+        smilesString = drug.smiles;
+      }
+      
+      if (!smilesString) {
         return res.status(400).json({ message: "SMILES string is required" });
       }
       
-      // In a real app, this would use ADMET prediction models
-      res.json({
-        absorption: Math.floor(Math.random() * 30) + 70,
-        distribution: Math.floor(Math.random() * 30) + 70,
-        metabolism: Math.floor(Math.random() * 40) + 60,
-        excretion: Math.floor(Math.random() * 30) + 70,
-        toxicity: Math.floor(Math.random() * 30), // Lower is better for toxicity
-        overallScore: Math.floor(Math.random() * 30) + 70
-      });
+      // Get instance of ADMET predictor model
+      const predictor = await getAdmetPredictor();
+      
+      // Run ADMET prediction using ML model
+      const result = await predictor.predictAdmet(smilesString);
+      
+      res.json(result);
     } catch (error) {
+      console.error('Error in ADMET prediction:', error);
       res.status(500).json({ message: "Failed to predict ADMET properties" });
     }
   });
 
   // Virtual screening
-  app.post("/api/screen/virtual", (req: Request, res: Response) => {
+  app.post("/api/screen/virtual", async (req: Request, res: Response) => {
     try {
-      const { targetId, compounds } = req.body;
+      const { targetId, screeningMode, topN } = req.body;
       
-      if (!targetId || !compounds || !Array.isArray(compounds)) {
+      if (!targetId) {
         return res.status(400).json({ 
-          message: "Target ID and array of compounds are required" 
+          message: "Target ID is required" 
         });
       }
       
-      // In a real app, this would use virtual screening methods
-      res.json({
-        results: compounds.map((c: any, i: number) => ({
-          compoundId: i + 1,
-          name: c.name || `Compound ${i+1}`,
-          score: Math.floor(Math.random() * 40) + 60,
-          bindingEnergy: -(Math.random() * 10 + 5).toFixed(2)
-        }))
-      });
+      // Get the target data from storage
+      const target = await storage.getTarget(Number(targetId));
+      
+      if (!target) {
+        return res.status(404).json({ message: "Target not found" });
+      }
+      
+      // Get instance of virtual screening model
+      const screeningModel = await getVirtualScreening();
+      
+      // Use default protein sequence if not available
+      const targetSequence = target.geneName || target.name;
+      
+      // Run virtual screening using ML model
+      const result = await screeningModel.screenCompounds(
+        targetSequence, 
+        screeningMode || 'docking', 
+        topN || 10
+      );
+      
+      res.json(result);
     } catch (error) {
+      console.error('Error in virtual screening:', error);
       res.status(500).json({ message: "Failed to perform virtual screening" });
     }
   });
 
   // Clinical trial analysis
-  app.post("/api/analyze/clinical-trial", (req: Request, res: Response) => {
+  app.post("/api/analyze/clinical-trial", async (req: Request, res: Response) => {
     try {
-      const { trialData } = req.body;
+      const { trialData, drugId, comparatorId } = req.body;
       
       if (!trialData) {
         return res.status(400).json({ message: "Trial data is required" });
       }
       
-      // In a real app, this would analyze clinical trial data
-      res.json({
-        hazardRatio: (Math.random() * 0.5 + 0.5).toFixed(2),
-        pValue: (Math.random() * 0.05).toFixed(4),
-        confidenceInterval: [
-          (Math.random() * 0.3 + 0.4).toFixed(2),
-          (Math.random() * 0.5 + 0.9).toFixed(2)
-        ],
-        recommendation: "Proceed to Phase II with sample size of 120 patients."
-      });
+      if (!drugId) {
+        return res.status(400).json({ message: "Drug ID is required" });
+      }
+      
+      // Get instance of clinical trial analyzer model
+      const analyzer = await getClinicalTrialAnalyzer();
+      
+      // Run clinical trial analysis using ML model
+      const result = await analyzer.analyzeTrial(Number(drugId), trialData, comparatorId);
+      
+      res.json(result);
     } catch (error) {
+      console.error('Error in clinical trial analysis:', error);
       res.status(500).json({ message: "Failed to analyze clinical trial" });
     }
   });
