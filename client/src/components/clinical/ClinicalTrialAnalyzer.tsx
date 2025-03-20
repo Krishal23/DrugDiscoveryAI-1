@@ -216,20 +216,20 @@ const ClinicalTrialAnalyzer = () => {
                           <div className="space-y-3">
                             <div className="flex justify-between text-sm">
                               <span className="text-gray-600">Hazard Ratio:</span>
-                              <span className="font-ibm font-medium">{analyzeTrialMutation.data.hazardRatio}</span>
+                              <span className="font-ibm font-medium">{analyzeTrialMutation.data?.hazardRatio || 'N/A'}</span>
                             </div>
                             <div className="flex justify-between text-sm">
                               <span className="text-gray-600">p-Value:</span>
                               <span className={`font-ibm font-medium ${
-                                parseFloat(analyzeTrialMutation.data.pValue) < 0.05 ? "text-success" : "text-warning"
+                                analyzeTrialMutation.data?.pValue && parseFloat(analyzeTrialMutation.data.pValue) < 0.05 ? "text-success" : "text-warning"
                               }`}>
-                                {analyzeTrialMutation.data.pValue}
+                                {analyzeTrialMutation.data?.pValue || 'N/A'}
                               </span>
                             </div>
                             <div className="flex justify-between text-sm">
                               <span className="text-gray-600">95% Confidence Interval:</span>
                               <span className="font-ibm font-medium">
-                                [{analyzeTrialMutation.data.confidenceInterval[0]}, {analyzeTrialMutation.data.confidenceInterval[1]}]
+                                [{analyzeTrialMutation.data?.confidenceInterval?.[0] || '0'}, {analyzeTrialMutation.data?.confidenceInterval?.[1] || '0'}]
                               </span>
                             </div>
                           </div>

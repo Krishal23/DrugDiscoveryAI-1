@@ -186,7 +186,7 @@ const InteractionPredictor = () => {
                   
                   <div className="space-y-4">
                     <h4 className="text-sm font-medium">Binding Sites</h4>
-                    {predictInteractionMutation.data.bindingSites.map((site: any, index: number) => (
+                    {predictInteractionMutation.data?.bindingSites?.map((site: any, index: number) => (
                       <div key={index} className="flex justify-between items-center p-2 bg-gray-50 rounded-md">
                         <div>
                           <span className="font-medium">{site.position}</span>

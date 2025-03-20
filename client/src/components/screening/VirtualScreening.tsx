@@ -252,7 +252,7 @@ const VirtualScreening = () => {
                 <TabsContent value="results">
                   <div className="flex justify-between items-center mb-4">
                     <div>
-                      <h3 className="text-sm font-medium">Found {screenVirtualMutation.data.results.length} potential compounds</h3>
+                      <h3 className="text-sm font-medium">Found {screenVirtualMutation.data?.results?.length || 0} potential compounds</h3>
                       <p className="text-xs text-gray-500">Sorted by docking score</p>
                     </div>
                     <div className="flex gap-2">
@@ -273,7 +273,7 @@ const VirtualScreening = () => {
                   </div>
                   
                   <div className="space-y-3 max-h-[500px] overflow-y-auto pr-2">
-                    {screenVirtualMutation.data.results.map((result: any) => (
+                    {screenVirtualMutation.data?.results?.map((result: any) => (
                       <ScreeningResultItem
                         key={result.compoundId}
                         compoundId={result.compoundId}
