@@ -174,10 +174,10 @@ const InteractionPredictor = () => {
                       <div className="flex justify-between mb-2">
                         <h4 className="text-sm font-medium">Prediction Confidence</h4>
                         <span className="text-lg font-semibold text-accent">
-                          {predictInteractionMutation.data.confidence}%
+                          {predictInteractionMutation.data?.confidence || 0}%
                         </span>
                       </div>
-                      <Progress value={predictInteractionMutation.data.confidence} className="h-2 bg-gray-200" />
+                      <Progress value={predictInteractionMutation.data?.confidence || 0} className="h-2 bg-gray-200" />
                       <p className="text-xs text-gray-500 mt-1">
                         Confidence in the accuracy of the prediction
                       </p>
@@ -186,7 +186,7 @@ const InteractionPredictor = () => {
                   
                   <div className="space-y-4">
                     <h4 className="text-sm font-medium">Binding Sites</h4>
-                    {predictInteractionMutation.data?.bindingSites?.map((site: any, index: number) => (
+                    {predictInteractionMutation.data?.bindingSites && predictInteractionMutation.data.bindingSites.length > 0 ? predictInteractionMutation.data.bindingSites.map((site: any, index: number) => (
                       <div key={index} className="flex justify-between items-center p-2 bg-gray-50 rounded-md">
                         <div>
                           <span className="font-medium">{site.position}</span>
@@ -196,7 +196,7 @@ const InteractionPredictor = () => {
                           {site.affinity} Affinity
                         </Badge>
                       </div>
-                    ))}
+                    )) : <div className="text-gray-500 text-sm p-2">No binding sites data available</div>}
                     
                     <Button variant="outline" className="w-full mt-4">
                       Export Prediction Report

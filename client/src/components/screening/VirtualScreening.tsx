@@ -273,7 +273,7 @@ const VirtualScreening = () => {
                   </div>
                   
                   <div className="space-y-3 max-h-[500px] overflow-y-auto pr-2">
-                    {screenVirtualMutation.data?.results?.map((result: any) => (
+                    {screenVirtualMutation.data?.results && screenVirtualMutation.data.results.length > 0 ? screenVirtualMutation.data.results.map((result: any) => (
                       <ScreeningResultItem
                         key={result.compoundId}
                         compoundId={result.compoundId}
@@ -283,7 +283,7 @@ const VirtualScreening = () => {
                         onClick={() => setSelectedCompoundId(result.compoundId)}
                         isSelected={selectedCompoundId === result.compoundId}
                       />
-                    ))}
+                    )) : <div className="text-center p-4">No results to display</div>}
                   </div>
                 </TabsContent>
                 
